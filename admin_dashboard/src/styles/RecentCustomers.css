@@ -1,0 +1,131 @@
+/* RecentCustomers.css */
+.recent-customers-container {
+  background: #1a1d29;
+  border: 1px solid #2d3142;
+  border-radius: 16px;
+  padding: 24px;
+}
+
+.recent-customers-container h3 {
+  font-size: 20px;
+  font-weight: 700;
+  color: #ffffff;
+  margin-bottom: 20px;
+}
+
+.customers-table {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.customers-table table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.customers-table thead {
+  background: #242938;
+}
+
+.customers-table th {
+  padding: 12px 16px;
+  text-align: left;
+  font-size: 12px;
+  font-weight: 600;
+  color: #a0a0a0;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  white-space: nowrap;
+}
+
+.customers-table td {
+  padding: 16px;
+  border-bottom: 1px solid #2d3142;
+  color: #d1d5db;
+  font-size: 14px;
+}
+
+.customers-table tbody tr {
+  transition: background 0.2s ease;
+}
+
+.customers-table tbody tr:hover {
+  background: rgba(99, 102, 241, 0.05);
+}
+
+.customers-table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.customer-cell {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.customer-avatar {
+  width: 36px;
+  height: 36px;
+  border-radius: 8px;
+  background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  font-weight: 700;
+  font-size: 14px;
+  flex-shrink: 0;
+}
+
+.customer-cell span {
+  font-weight: 500;
+  color: #ffffff;
+}
+
+.amount {
+  font-weight: 600;
+  color: #ffffff;
+}
+
+.status-badge {
+  padding: 4px 12px;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: capitalize;
+  white-space: nowrap;
+}
+
+.status-completed {
+  background: rgba(34, 197, 94, 0.1);
+  color: #22c55e;
+}
+
+.status-pending {
+  background: rgba(251, 146, 60, 0.1);
+  color: #fb923c;
+}
+
+.status-cancelled {
+  background: rgba(239, 68, 68, 0.1);
+  color: #ef4444;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .recent-customers-container {
+    padding: 20px;
+  }
+
+  .customers-table th,
+  .customers-table td {
+    padding: 12px;
+    font-size: 13px;
+  }
+
+  .customer-avatar {
+    width: 32px;
+    height: 32px;
+    font-size: 13px;
+  }
+}

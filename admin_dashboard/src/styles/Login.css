@@ -221,3 +221,21 @@
     grid-template-columns: 1fr;
   }
 }
+
+.error-message {
+  background: rgba(239, 68, 68, 0.1);
+  border: 1px solid #ef4444;
+  border-radius: 10px;
+  padding: 12px 16px;
+  margin-bottom: 20px;
+  color: #ef4444;
+  font-size: 14px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.error-message::before {
+  content: '⚠️';
+  font-size: 16px;
+}

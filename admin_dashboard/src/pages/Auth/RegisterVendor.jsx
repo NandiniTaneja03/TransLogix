@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { useAuth } from '../context/AuthContext';
+import { useAuth } from '../../pages/context/AuthContext';
 import '../../styles/Login.css';
 
 const RegisterVendor = () => {
@@ -19,7 +19,7 @@ const RegisterVendor = () => {
 
   const [errors, setErrors] = useState({});
   const [isLoading, setIsLoading] = useState(false);
-  const { login } = useAuth();
+  const { register } = useAuth();
   const navigate = useNavigate();
 
   const businessTypes = [
@@ -43,22 +43,42 @@ const RegisterVendor = () => {
   const validateForm = () => {
     const newErrors = {};
 
-    if (!formData.businessName.trim()) newErrors.businessName = 'Business name is required';
+    if (!formData.businessName.trim()) {
+      newErrors.businessName = 'Business name is required';
+    }
+    
     if (!formData.email) {
       newErrors.email = 'Email is required';
     } else if (!/\S+@\S+\.\S+/.test(formData.email)) {
       newErrors.email = 'Email is invalid';
     }
-    if (!formData.phone) newErrors.phone = 'Phone number is required';
-    if (!formData.address.trim()) newErrors.address = 'Business address is required';
-    if (!formData.city.trim()) newErrors.city = 'City is required';
-    if (!formData.zipCode.trim()) newErrors.zipCode = 'ZIP code is required';
-    if (!formData.businessType) newErrors.businessType = 'Business type is required';
+    
+    if (!formData.phone) {
+      newErrors.phone = 'Phone number is required';
+    }
+    
+    if (!formData.address.trim()) {
+      newErrors.address = 'Business address is required';
+    }
+    
+    if (!formData.city.trim()) {
+      newErrors.city = 'City is required';
+    }
+    
+    if (!formData.zipCode.trim()) {
+      newErrors.zipCode = 'ZIP code is required';
+    }
+    
+    if (!formData.businessType) {
+      newErrors.businessType = 'Business type is required';
+    }
+
     if (!formData.password) {
       newErrors.password = 'Password is required';
     } else if (formData.password.length < 8) {
       newErrors.password = 'Password must be at least 8 characters';
     }
+    
     if (formData.password !== formData.confirmPassword) {
       newErrors.confirmPassword = 'Passwords do not match';
     }
@@ -78,12 +98,17 @@ const RegisterVendor = () => {
 
     setIsLoading(true);
 
-    setTimeout(() => {
-      console.log('Vendor registered:', formData);
-      login({ ...formData, role: 'vendor' });
+    // Register using AuthContext
+    const result = await register(formData, 'vendor');
+    
+    setIsLoading(false);
+
+    if (result.success) {
+      alert('✓ Registration successful! Welcome to TransLogix.');
       navigate('/vendor');
-      setIsLoading(false);
-    }, 1500);
+    } else {
+      setErrors({ submit: result.error || 'Registration failed. Please try again.' });
+    }
   };
 
   return (
@@ -101,6 +126,12 @@ const RegisterVendor = () => {
 
         <h1>Register as Vendor</h1>
         <p className="subtitle">Start your business with us today</p>
+
+        {errors.submit && (
+          <div className="error-message">
+            {errors.submit}
+          </div>
+        )}
 
         <form onSubmit={handleSubmit} className="auth-form">
           <div className="form-row">

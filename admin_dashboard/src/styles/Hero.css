@@ -5,16 +5,40 @@
 }
 
 .hero-section {
-  padding: 100px 60px;
-  max-width: 1400px;
-  margin: 0 auto;
+  width: 100%;
+  min-height: 100vh;
+  padding: 100px 80px;
+
+    background: linear-gradient(
+    120deg,
+    #1a1f36 0%,
+    #2d1b69 40%,
+    #4f2db8 70%,
+    #3b1c6e 100%
+  );
+
+  background-size: 300% 300%;
+  animation: gradientMove 6s ease infinite;
+   position: relative;
+}
+.hero-section::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: rgba(10,12,20,0.55);
+  z-index: 0;
 }
 
 .hero-content {
+  max-width: 1400px;
+  margin: 0 auto;
+
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 80px;
   align-items: center;
+  position: relative;
+  z-index: 1;
 }
 
 .hero-text {
@@ -36,6 +60,11 @@
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
+}
+@keyframes gradientMove {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
 }
 
 .hero-description {
@@ -63,6 +92,7 @@
 .btn-hero.primary {
   background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
   color: white;
+  box-shadow: 0 6px 18px rgba(99,102,241,0.4);
 }
 
 .btn-hero.primary:hover {
@@ -84,6 +114,10 @@
   display: flex;
   gap: 48px;
   margin-top: 24px;
+  background: rgba(255,255,255,0.05);
+  padding: 20px 30px;
+  border-radius: 12px;
+  backdrop-filter: blur(8px);
 }
 
 .stat-item h3 {
@@ -109,6 +143,124 @@
 .delivery-illustration {
   width: 100%;
   height: 100%;
+}
+
+/* Truck Animation */
+.truck-animation {
+  animation: truckMove 3s ease-in-out infinite;
+}
+
+@keyframes truckMove {
+  0%, 100% {
+    transform: translateX(0);
+  }
+  50% {
+    transform: translateX(10px);
+  }
+}
+
+/* GPS Pin Animations */
+.pin-animation-1 {
+  animation: pinPulse 2s ease-in-out infinite;
+}
+
+.pin-animation-2 {
+  animation: pinPulse 2s ease-in-out infinite 1s;
+}
+
+@keyframes pinPulse {
+  0%, 100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+  50% {
+    transform: scale(1.1);
+    opacity: 0.8;
+  }
+}
+
+/* Route Path Animation */
+.route-animation {
+  stroke-dasharray: 1000;
+  stroke-dashoffset: 1000;
+  animation: drawRoute 4s ease-in-out infinite;
+}
+
+@keyframes drawRoute {
+  0% {
+    stroke-dashoffset: 1000;
+  }
+  50%, 100% {
+    stroke-dashoffset: 0;
+  }
+}
+
+/* Floating Packages */
+.float-animation-1 {
+  animation: float 3s ease-in-out infinite;
+}
+
+.float-animation-2 {
+  animation: float 3s ease-in-out infinite 1.5s;
+}
+
+@keyframes float {
+  0%, 100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-20px);
+  }
+}
+
+/* Speed Lines */
+.speed-lines {
+  animation: speedLines 1.5s ease-in-out infinite;
+}
+
+@keyframes speedLines {
+  0% {
+    transform: translateX(0);
+    opacity: 0.3;
+  }
+  50% {
+    transform: translateX(-20px);
+    opacity: 0.1;
+  }
+  100% {
+    transform: translateX(-40px);
+    opacity: 0;
+  }
+}
+
+/* Clock Pulse */
+.pulse-animation {
+  animation: pulse 2s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  0%, 100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+  50% {
+    transform: scale(1.05);
+    opacity: 0.9;
+  }
+}
+
+/* Analytics Scale */
+.scale-pulse {
+  animation: scalePulse 2.5s ease-in-out infinite;
+}
+
+@keyframes scalePulse {
+  0%, 100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.08);
+  }
 }
 
 /* Sections */
@@ -367,4 +519,23 @@
   .step-arrow {
     transform: rotate(90deg);
   }
+}
+
+.hero-image::before {
+  content: "";
+  position: absolute;
+  width: 450px;
+  height: 450px;
+  background: radial-gradient(circle, rgba(139,92,246,0.35), transparent 70%);
+  filter: blur(60px);
+  z-index: 0;
+}
+
+.hero-image {
+  position: relative;
+}
+
+.hero-illustration {
+  position: relative;
+  z-index: 1;
 }

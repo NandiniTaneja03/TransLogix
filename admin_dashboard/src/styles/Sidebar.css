@@ -238,3 +238,76 @@
     transform: translateX(0);
   }
 }
+/* Add these updates to MyOrders.css */
+
+.page-content {
+  padding: 30px;
+  width: 100%;
+  max-width: none; /* Remove max-width restriction */
+}
+
+.orders-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(420px, 1fr));
+  gap: 24px;
+  width: 100%;
+}
+
+.completed-info {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 16px;
+  background: rgba(34, 197, 94, 0.1);
+  border: 1px solid rgba(34, 197, 94, 0.3);
+  border-radius: 10px;
+}
+
+.completed-badge {
+  font-size: 14px;
+  font-weight: 700;
+  color: #22c55e;
+}
+
+.completed-time {
+  font-size: 12px;
+  color: #6b7280;
+}
+
+.completed-amount {
+  font-size: 15px;
+  font-weight: 600;
+  color: #ffffff;
+}
+
+.completed-rating {
+  font-size: 13px;
+  color: #f59e0b;
+  font-weight: 600;
+}
+
+/* Full width container */
+.admin-layout {
+  display: flex;
+  min-height: 100vh;
+  width: 100%;
+}
+
+.main-content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-width: 0; /* Allow flex item to shrink */
+}
+
+@media (max-width: 1400px) {
+  .orders-grid {
+    grid-template-columns: repeat(auto-fill, minmax(360px, 1fr));
+  }
+}
+
+@media (max-width: 992px) {
+  .orders-grid {
+    grid-template-columns: 1fr;
+  }
+}

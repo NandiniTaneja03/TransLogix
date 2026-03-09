@@ -1,10 +1,14 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { useAuth } from '../../pages/context/AuthContext';
 import Header from '../../components/layout/Header';
 import Sidebar from '../../components/layout/Sidebar';
 import '../../styles/CreateOrder.css';
 
 const CreateOrder = () => {
-  const [orderData, setOrderData] = useState({
+  const { user } = useAuth();
+  const navigate = useNavigate();
+  const [formData, setFormData] = useState({
     customerName: '',
     customerPhone: '',
     customerEmail: '',
@@ -16,44 +20,160 @@ const CreateOrder = () => {
     deliveryZip: '',
     packageType: '',
     weight: '',
-    dimensions: '',
-    deliveryDate: '',
-    deliveryTime: '',
+    length: '',
+    width: '',
+    height: '',
     priority: 'standard',
+    deliveryDate: '',
+    preferredTime: '',
     fragile: false,
     insurance: false,
     specialInstructions: ''
   });
 
+  const [errors, setErrors] = useState({});
   const [isLoading, setIsLoading] = useState(false);
 
   const packageTypes = [
-    'Document',
-    'Small Package',
-    'Medium Package',
-    'Large Package',
-    'Fragile Item',
-    'Perishable',
-    'Electronics'
+    'Documents',
+    'Electronics',
+    'Clothing',
+    'Food',
+    'Furniture',
+    'Medical Supplies',
+    'Other'
   ];
 
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
-    setOrderData(prev => ({
+    setFormData(prev => ({
       ...prev,
       [name]: type === 'checkbox' ? checked : value
     }));
+
+    if (errors[name]) {
+      setErrors(prev => ({ ...prev, [name]: '' }));
+    }
+  };
+
+  const validateForm = () => {
+    const newErrors = {};
+
+    // Customer Info
+    if (!formData.customerName.trim()) newErrors.customerName = 'Customer name required';
+    if (!formData.customerPhone.trim()) newErrors.customerPhone = 'Phone required';
+    if (!formData.customerEmail.trim()) {
+      newErrors.customerEmail = 'Email required';
+    } else if (!/\S+@\S+\.\S+/.test(formData.customerEmail)) {
+      newErrors.customerEmail = 'Invalid email';
+    }
+
+    // Pickup
+    if (!formData.pickupAddress.trim()) newErrors.pickupAddress = 'Pickup address required';
+    if (!formData.pickupCity.trim()) newErrors.pickupCity = 'City required';
+    if (!formData.pickupZip.trim()) newErrors.pickupZip = 'ZIP required';
+
+    // Delivery
+    if (!formData.deliveryAddress.trim()) newErrors.deliveryAddress = 'Delivery address required';
+    if (!formData.deliveryCity.trim()) newErrors.deliveryCity = 'City required';
+    if (!formData.deliveryZip.trim()) newErrors.deliveryZip = 'ZIP required';
+
+    // Package
+    if (!formData.packageType) newErrors.packageType = 'Package type required';
+    if (!formData.weight) newErrors.weight = 'Weight required';
+    if (!formData.deliveryDate) newErrors.deliveryDate = 'Delivery date required';
+
+    return newErrors;
+  };
+
+  const calculateDeliveryFee = () => {
+    let baseFee = 10;
+    const weight = parseFloat(formData.weight) || 0;
+    
+    // Weight-based fee
+    baseFee += weight * 2;
+    
+    // Priority fee
+    if (formData.priority === 'express') baseFee += 15;
+    if (formData.priority === 'overnight') baseFee += 25;
+    
+    // Insurance
+    if (formData.insurance) baseFee += 5;
+    
+    return baseFee.toFixed(2);
+  };
+
+  const handleSaveAsDraft = (e) => {
+    e.preventDefault();
+    
+    const newErrors = validateForm();
+    if (Object.keys(newErrors).length > 0) {
+      setErrors(newErrors);
+      alert('Please fill all required fields before saving as draft');
+      return;
+    }
+
+    // Get existing drafts
+    const drafts = JSON.parse(localStorage.getItem('vendor_drafts') || '[]');
+    
+    const draftOrder = {
+      id: `DRAFT${Date.now()}`,
+      ...formData,
+      vendorId: user.id,
+      vendorName: user.businessName || user.email,
+      status: 'draft',
+      deliveryFee: calculateDeliveryFee(),
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString()
+    };
+
+    drafts.push(draftOrder);
+    localStorage.setItem('vendor_drafts', JSON.stringify(drafts));
+
+    alert('✓ Order saved as draft!\n\nYou can find it in your dashboard.');
+    navigate('/vendor');
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    
+    const newErrors = validateForm();
+    if (Object.keys(newErrors).length > 0) {
+      setErrors(newErrors);
+      return;
+    }
+
     setIsLoading(true);
 
+    // Simulate order creation
     setTimeout(() => {
-      console.log('Order created:', orderData);
-      alert('Order created successfully!');
+      // Get existing orders
+      const orders = JSON.parse(localStorage.getItem('vendor_orders') || '[]');
+      
+      const newOrder = {
+        id: `#ORD${1000 + orders.length + 1}`,
+        ...formData,
+        vendorId: user.id,
+        vendorName: user.businessName || user.email,
+        pickup: `${formData.pickupAddress}, ${formData.pickupCity}`,
+        delivery: `${formData.deliveryAddress}, ${formData.deliveryCity}`,
+        distance: '5.2 km', // Mock distance
+        deliveryFee: calculateDeliveryFee(),
+        total: (parseFloat(calculateDeliveryFee()) + 50).toFixed(2), // Mock total
+        amount: '50.00', // Mock order amount
+        status: 'pending',
+        driver: 'Not Assigned',
+        createdAt: new Date().toISOString(),
+        estimatedDelivery: formData.deliveryDate
+      };
+
+      orders.push(newOrder);
+      localStorage.setItem('vendor_orders', JSON.stringify(orders));
+
       setIsLoading(false);
-    }, 1500);
+      alert(`✓ Order ${newOrder.id} created successfully!\n\nStatus: Pending\nWaiting for driver assignment...`);
+      navigate('/vendor');
+    }, 1000);
   };
 
   return (
@@ -64,12 +184,13 @@ const CreateOrder = () => {
         <div className="page-content">
           <div className="page-header">
             <div>
-              <h1>Create New Order</h1>
+              <h1>➕ Create New Order</h1>
               <p className="page-subtitle">Fill in the details to create a delivery order</p>
             </div>
           </div>
 
           <form onSubmit={handleSubmit} className="create-order-form">
+            {/* Customer Information */}
             <div className="form-section">
               <h2 className="section-title">
                 <span className="section-icon">👤</span>
@@ -78,19 +199,46 @@ const CreateOrder = () => {
               <div className="form-grid">
                 <div className="input-group">
                   <label>Customer Name *</label>
-                  <input type="text" name="customerName" placeholder="John Doe" value={orderData.customerName} onChange={handleChange} required />
+                  <input
+                    type="text"
+                    name="customerName"
+                    placeholder="John Doe"
+                    value={formData.customerName}
+                    onChange={handleChange}
+                    className={errors.customerName ? 'error' : ''}
+                  />
+                  {errors.customerName && <span className="error-text">{errors.customerName}</span>}
                 </div>
+
                 <div className="input-group">
                   <label>Phone Number *</label>
-                  <input type="tel" name="customerPhone" placeholder="+1 (555) 000-0000" value={orderData.customerPhone} onChange={handleChange} required />
+                  <input
+                    type="tel"
+                    name="customerPhone"
+                    placeholder="+1 (555) 000-0000"
+                    value={formData.customerPhone}
+                    onChange={handleChange}
+                    className={errors.customerPhone ? 'error' : ''}
+                  />
+                  {errors.customerPhone && <span className="error-text">{errors.customerPhone}</span>}
                 </div>
+
                 <div className="input-group full-width">
-                  <label>Email (Optional)</label>
-                  <input type="email" name="customerEmail" placeholder="customer@example.com" value={orderData.customerEmail} onChange={handleChange} />
+                  <label>Email Address *</label>
+                  <input
+                    type="email"
+                    name="customerEmail"
+                    placeholder="customer@example.com"
+                    value={formData.customerEmail}
+                    onChange={handleChange}
+                    className={errors.customerEmail ? 'error' : ''}
+                  />
+                  {errors.customerEmail && <span className="error-text">{errors.customerEmail}</span>}
                 </div>
               </div>
             </div>
 
+            {/* Pickup Location */}
             <div className="form-section">
               <h2 className="section-title">
                 <span className="section-icon">📍</span>
@@ -99,40 +247,94 @@ const CreateOrder = () => {
               <div className="form-grid">
                 <div className="input-group full-width">
                   <label>Pickup Address *</label>
-                  <input type="text" name="pickupAddress" placeholder="123 Pickup Street" value={orderData.pickupAddress} onChange={handleChange} required />
+                  <input
+                    type="text"
+                    name="pickupAddress"
+                    placeholder="123 Business Street"
+                    value={formData.pickupAddress}
+                    onChange={handleChange}
+                    className={errors.pickupAddress ? 'error' : ''}
+                  />
+                  {errors.pickupAddress && <span className="error-text">{errors.pickupAddress}</span>}
                 </div>
+
                 <div className="input-group">
                   <label>City *</label>
-                  <input type="text" name="pickupCity" placeholder="City" value={orderData.pickupCity} onChange={handleChange} required />
+                  <input
+                    type="text"
+                    name="pickupCity"
+                    placeholder="City"
+                    value={formData.pickupCity}
+                    onChange={handleChange}
+                    className={errors.pickupCity ? 'error' : ''}
+                  />
+                  {errors.pickupCity && <span className="error-text">{errors.pickupCity}</span>}
                 </div>
+
                 <div className="input-group">
                   <label>ZIP Code *</label>
-                  <input type="text" name="pickupZip" placeholder="12345" value={orderData.pickupZip} onChange={handleChange} required />
+                  <input
+                    type="text"
+                    name="pickupZip"
+                    placeholder="12345"
+                    value={formData.pickupZip}
+                    onChange={handleChange}
+                    className={errors.pickupZip ? 'error' : ''}
+                  />
+                  {errors.pickupZip && <span className="error-text">{errors.pickupZip}</span>}
                 </div>
               </div>
             </div>
 
+            {/* Delivery Location */}
             <div className="form-section">
               <h2 className="section-title">
-                <span className="section-icon">🚚</span>
+                <span className="section-icon">🎯</span>
                 Delivery Location
               </h2>
               <div className="form-grid">
                 <div className="input-group full-width">
                   <label>Delivery Address *</label>
-                  <input type="text" name="deliveryAddress" placeholder="456 Delivery Avenue" value={orderData.deliveryAddress} onChange={handleChange} required />
+                  <input
+                    type="text"
+                    name="deliveryAddress"
+                    placeholder="456 Customer Avenue"
+                    value={formData.deliveryAddress}
+                    onChange={handleChange}
+                    className={errors.deliveryAddress ? 'error' : ''}
+                  />
+                  {errors.deliveryAddress && <span className="error-text">{errors.deliveryAddress}</span>}
                 </div>
+
                 <div className="input-group">
                   <label>City *</label>
-                  <input type="text" name="deliveryCity" placeholder="City" value={orderData.deliveryCity} onChange={handleChange} required />
+                  <input
+                    type="text"
+                    name="deliveryCity"
+                    placeholder="City"
+                    value={formData.deliveryCity}
+                    onChange={handleChange}
+                    className={errors.deliveryCity ? 'error' : ''}
+                  />
+                  {errors.deliveryCity && <span className="error-text">{errors.deliveryCity}</span>}
                 </div>
+
                 <div className="input-group">
                   <label>ZIP Code *</label>
-                  <input type="text" name="deliveryZip" placeholder="12345" value={orderData.deliveryZip} onChange={handleChange} required />
+                  <input
+                    type="text"
+                    name="deliveryZip"
+                    placeholder="12345"
+                    value={formData.deliveryZip}
+                    onChange={handleChange}
+                    className={errors.deliveryZip ? 'error' : ''}
+                  />
+                  {errors.deliveryZip && <span className="error-text">{errors.deliveryZip}</span>}
                 </div>
               </div>
             </div>
 
+            {/* Package Details */}
             <div className="form-section">
               <h2 className="section-title">
                 <span className="section-icon">📦</span>
@@ -141,51 +343,105 @@ const CreateOrder = () => {
               <div className="form-grid">
                 <div className="input-group">
                   <label>Package Type *</label>
-                  <select name="packageType" value={orderData.packageType} onChange={handleChange} required>
-                    <option value="">Select package type</option>
+                  <select
+                    name="packageType"
+                    value={formData.packageType}
+                    onChange={handleChange}
+                    className={errors.packageType ? 'error' : ''}
+                  >
+                    <option value="">Select type</option>
                     {packageTypes.map(type => (
                       <option key={type} value={type}>{type}</option>
                     ))}
                   </select>
+                  {errors.packageType && <span className="error-text">{errors.packageType}</span>}
                 </div>
+
                 <div className="input-group">
                   <label>Weight (kg) *</label>
-                  <input type="number" name="weight" placeholder="5.0" step="0.1" value={orderData.weight} onChange={handleChange} required />
+                  <input
+                    type="number"
+                    name="weight"
+                    placeholder="0.0"
+                    step="0.1"
+                    value={formData.weight}
+                    onChange={handleChange}
+                    className={errors.weight ? 'error' : ''}
+                  />
+                  {errors.weight && <span className="error-text">{errors.weight}</span>}
                 </div>
-                <div className="input-group">
-                  <label>Dimensions (L x W x H cm)</label>
-                  <input type="text" name="dimensions" placeholder="30 x 20 x 15" value={orderData.dimensions} onChange={handleChange} />
+
+                <div className="input-group full-width">
+                  <label>Dimensions (L × W × H cm)</label>
+                  <input
+                    type="text"
+                    name="dimensions"
+                    placeholder="30 × 20 × 15"
+                    value={`${formData.length} × ${formData.width} × ${formData.height}`}
+                    readOnly
+                  />
                 </div>
+
                 <div className="input-group">
                   <label>Priority *</label>
-                  <select name="priority" value={orderData.priority} onChange={handleChange} required>
+                  <select
+                    name="priority"
+                    value={formData.priority}
+                    onChange={handleChange}
+                  >
                     <option value="standard">Standard</option>
-                    <option value="express">Express</option>
-                    <option value="overnight">Overnight</option>
+                    <option value="express">Express (+$15)</option>
+                    <option value="overnight">Overnight (+$25)</option>
                   </select>
                 </div>
+
                 <div className="input-group">
                   <label>Delivery Date *</label>
-                  <input type="date" name="deliveryDate" value={orderData.deliveryDate} onChange={handleChange} required />
+                  <input
+                    type="date"
+                    name="deliveryDate"
+                    value={formData.deliveryDate}
+                    onChange={handleChange}
+                    className={errors.deliveryDate ? 'error' : ''}
+                    min={new Date().toISOString().split('T')[0]}
+                  />
+                  {errors.deliveryDate && <span className="error-text">{errors.deliveryDate}</span>}
                 </div>
+
                 <div className="input-group">
                   <label>Preferred Time</label>
-                  <input type="time" name="deliveryTime" value={orderData.deliveryTime} onChange={handleChange} />
+                  <input
+                    type="time"
+                    name="preferredTime"
+                    value={formData.preferredTime}
+                    onChange={handleChange}
+                  />
                 </div>
-              </div>
 
-              <div className="checkbox-group">
-                <label className="checkbox-label">
-                  <input type="checkbox" name="fragile" checked={orderData.fragile} onChange={handleChange} />
-                  <span>Fragile - Handle with care</span>
-                </label>
-                <label className="checkbox-label">
-                  <input type="checkbox" name="insurance" checked={orderData.insurance} onChange={handleChange} />
-                  <span>Add insurance coverage</span>
-                </label>
+                <div className="checkbox-group">
+                  <label className="checkbox-label">
+                    <input
+                      type="checkbox"
+                      name="fragile"
+                      checked={formData.fragile}
+                      onChange={handleChange}
+                    />
+                    <span>Fragile - Handle with care</span>
+                  </label>
+                  <label className="checkbox-label">
+                    <input
+                      type="checkbox"
+                      name="insurance"
+                      checked={formData.insurance}
+                      onChange={handleChange}
+                    />
+                    <span>Add insurance coverage (+$5)</span>
+                  </label>
+                </div>
               </div>
             </div>
 
+            {/* Additional Information */}
             <div className="form-section">
               <h2 className="section-title">
                 <span className="section-icon">📝</span>
@@ -193,13 +449,57 @@ const CreateOrder = () => {
               </h2>
               <div className="input-group">
                 <label>Special Instructions</label>
-                <textarea name="specialInstructions" placeholder="Any special delivery instructions..." value={orderData.specialInstructions} onChange={handleChange} rows="4" />
+                <textarea
+                  name="specialInstructions"
+                  placeholder="Any special delivery instructions..."
+                  rows="4"
+                  value={formData.specialInstructions}
+                  onChange={handleChange}
+                />
               </div>
             </div>
 
+            {/* Delivery Fee Summary */}
+            <div className="fee-summary">
+              <div className="fee-row">
+                <span>Delivery Fee:</span>
+                <strong>${calculateDeliveryFee()}</strong>
+              </div>
+              {formData.priority === 'express' && (
+                <div className="fee-row small">
+                  <span>Express Delivery:</span>
+                  <span>+$15.00</span>
+                </div>
+              )}
+              {formData.priority === 'overnight' && (
+                <div className="fee-row small">
+                  <span>Overnight Delivery:</span>
+                  <span>+$25.00</span>
+                </div>
+              )}
+              {formData.insurance && (
+                <div className="fee-row small">
+                  <span>Insurance:</span>
+                  <span>+$5.00</span>
+                </div>
+              )}
+            </div>
+
+            {/* Form Actions */}
             <div className="form-actions">
-              <button type="button" className="btn-secondary">Save as Draft</button>
-              <button type="submit" className="btn-primary" disabled={isLoading}>
+              <button 
+                type="button" 
+                className="btn-draft"
+                onClick={handleSaveAsDraft}
+                disabled={isLoading}
+              >
+                Save as Draft
+              </button>
+              <button 
+                type="submit" 
+                className="btn-submit"
+                disabled={isLoading}
+              >
                 {isLoading ? 'Creating Order...' : 'Create Order'}
               </button>
             </div>

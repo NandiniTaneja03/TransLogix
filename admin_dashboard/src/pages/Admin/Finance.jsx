@@ -15,16 +15,4 @@ const Finance = () => (
   </div>
 );
 
-export const ManageOrders = () => (
-  <div className="admin-layout">
-    <Sidebar userRole="admin" />
-    <div className="main-content">
-      <Header />
-      <div className="page-content">
-        <h1>Manage Orders</h1>
-        <p>Orders management content goes here...</p>
-      </div>
-    </div>
-  </div>
-);
 export default Finance;

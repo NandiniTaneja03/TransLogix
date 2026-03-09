@@ -1,42 +1,75 @@
-import React from 'react';
-import { Link } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { useAuth } from '../../pages/context/AuthContext';
 import Header from '../../components/layout/Header';
 import Sidebar from '../../components/layout/Sidebar';
 import '../../styles/VendorDashboard.css';
 
 const VendorDashboard = () => {
-  const stats = [
-    { title: 'Total Orders', value: '1,234', icon: '📦', color: '#6366f1' },
-    { title: 'Active Orders', value: '78', icon: '🚚', color: '#8b5cf6' },
-    { title: 'Completed', value: '1,156', icon: '✅', color: '#22c55e' },
-    { title: 'Revenue', value: '$45,678', icon: '💰', color: '#f59e0b' }
+  const { user } = useAuth();
+  const navigate = useNavigate();
+  const [orders, setOrders] = useState([]);
+  const [drafts, setDrafts] = useState([]);
+
+  const displayName = user?.displayName || user?.businessName || 'Vendor';
+
+  // Load orders and drafts from localStorage
+  useEffect(() => {
+    const savedOrders = JSON.parse(localStorage.getItem('vendor_orders') || '[]');
+    const savedDrafts = JSON.parse(localStorage.getItem('vendor_drafts') || '[]');
+    setOrders(savedOrders);
+    setDrafts(savedDrafts);
+  }, []);
+
+  // Calculate stats from actual data
+  const stats = {
+    totalOrders: orders.length,
+    activeOrders: orders.filter(o => o.status === 'pending' || o.status === 'in-transit').length,
+    completedOrders: orders.filter(o => o.status === 'delivered').length,
+    revenue: orders
+      .filter(o => o.status === 'delivered')
+      .reduce((sum, o) => sum + parseFloat(o.total || 0), 0)
+      .toFixed(2)
+  };
+
+  const statsCards = [
+    { title: 'Total Orders', value: stats.totalOrders, icon: '📦', color: '#6366f1' },
+    { title: 'Active Orders', value: stats.activeOrders, icon: '🚚', color: '#f59e0b' },
+    { title: 'Completed', value: stats.completedOrders, icon: '✓', color: '#22c55e' },
+    { title: 'Revenue', value: `$${stats.revenue}`, icon: '💰', color: '#8b5cf6' }
   ];
 
-  const recentOrders = [
-    { id: '#ORD001', customer: 'John Doe', pickup: '123 Main St', delivery: '456 Oak Ave', status: 'In Transit', date: '2026-02-19' },
-    { id: '#ORD002', customer: 'Jane Smith', pickup: '789 Pine Rd', delivery: '321 Elm St', status: 'Pending', date: '2026-02-19' },
-    { id: '#ORD003', customer: 'Mike Johnson', pickup: '555 Maple Dr', delivery: '888 Birch Ln', status: 'Completed', date: '2026-02-18' }
-  ];
+  // Get recent orders (last 5)
+  const recentOrders = orders.slice(-5).reverse();
+
+  const handleViewOrder = (orderId) => {
+    navigate(`/vendor/orders`);
+  };
+
+  const handleEditDraft = (draftId) => {
+    navigate(`/vendor/create-order?draft=${draftId}`);
+  };
 
   return (
     <div className="admin-layout">
       <Sidebar userRole="vendor" />
       <div className="main-content">
         <Header />
-        <div className="dashboard-content">
-          <div className="dashboard-header">
+        <div className="page-content">
+          <div className="page-header">
             <div>
-              <h1>Vendor Dashboard</h1>
-              <p className="subtitle">Welcome back! Here's your business overview</p>
+              <h1>Hey, {displayName}! 👋</h1>
+              <p className="page-subtitle">Here's your business overview for today</p>
             </div>
-            <Link to="/vendor/create-order" className="btn-create-order">
-              <span>+</span> Create New Order
-            </Link>
+            <button className="btn-create-order" onClick={() => navigate('/vendor/create-order')}>
+              ➕ Create New Order
+            </button>
           </div>
 
+          {/* Stats Grid */}
           <div className="stats-grid">
-            {stats.map((stat, index) => (
-              <div key={index} className="stats-card vendor-stat">
+            {statsCards.map((stat, index) => (
+              <div key={index} className="stats-card vendor-stat" style={{ borderLeft: `4px solid ${stat.color}` }}>
                 <div className="stat-icon" style={{ background: `${stat.color}20` }}>
                   <span style={{ fontSize: '32px' }}>{stat.icon}</span>
                 </div>
@@ -48,75 +81,102 @@ const VendorDashboard = () => {
             ))}
           </div>
 
-          <div className="dashboard-grid">
-            <div className="recent-orders-section">
+          {/* Drafts Section */}
+          {drafts.length > 0 && (
+            <div className="drafts-section">
               <div className="section-header">
-                <h2>Recent Orders</h2>
-                <Link to="/vendor/reports" className="view-all-link">View All →</Link>
+                <h2>📝 Draft Orders</h2>
+                <span className="draft-count">{drafts.length} drafts</span>
               </div>
-              <div className="orders-list">
-                {recentOrders.map(order => (
-                  <div key={order.id} className="order-card">
-                    <div className="order-header">
-                      <span className="order-id">{order.id}</span>
-                      <span className={`status-badge status-${order.status.toLowerCase().replace(' ', '-')}`}>
-                        {order.status}
-                      </span>
+              <div className="drafts-grid">
+                {drafts.map(draft => (
+                  <div key={draft.id} className="draft-card">
+                    <div className="draft-header">
+                      <h4>{draft.id}</h4>
+                      <span className="draft-badge">Draft</span>
                     </div>
-                    <div className="order-details">
-                      <div className="order-info">
-                        <span className="label">Customer:</span>
-                        <span className="value">{order.customer}</span>
-                      </div>
-                      <div className="order-route">
-                        <div className="route-item">
-                          <span className="route-icon">📍</span>
-                          <span>{order.pickup}</span>
-                        </div>
-                        <div className="route-arrow">→</div>
-                        <div className="route-item">
-                          <span className="route-icon">🎯</span>
-                          <span>{order.delivery}</span>
-                        </div>
-                      </div>
-                      <div className="order-footer">
-                        <span className="order-date">{order.date}</span>
-                        <button className="btn-track">Track Order</button>
-                      </div>
+                    <div className="draft-info">
+                      <p>Customer: {draft.customerName}</p>
+                      <p>Delivery: {draft.deliveryAddress}</p>
+                      <p className="draft-date">Saved: {new Date(draft.createdAt).toLocaleString()}</p>
+                    </div>
+                    <div className="draft-actions">
+                      <button className="btn-edit-draft" onClick={() => handleEditDraft(draft.id)}>
+                        Edit & Complete
+                      </button>
+                      <button className="btn-delete-draft" onClick={() => {
+                        const updated = drafts.filter(d => d.id !== draft.id);
+                        localStorage.setItem('vendor_drafts', JSON.stringify(updated));
+                        setDrafts(updated);
+                      }}>
+                        Delete
+                      </button>
                     </div>
                   </div>
                 ))}
               </div>
             </div>
+          )}
 
-            <div className="quick-actions-section">
-              <h2>Quick Actions</h2>
-              <div className="actions-list">
-                <Link to="/vendor/create-order" className="action-item">
-                  <div className="action-icon" style={{ background: 'rgba(99, 102, 241, 0.1)' }}>
-                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-                      <path d="M12 5V19M5 12H19" stroke="#6366f1" strokeWidth="2" strokeLinecap="round"/>
-                    </svg>
-                  </div>
-                  <div>
-                    <h4>Create Order</h4>
-                    <p>Create a new delivery order</p>
-                  </div>
-                </Link>
-                <Link to="/vendor/reports" className="action-item">
-                  <div className="action-icon" style={{ background: 'rgba(139, 92, 246, 0.1)' }}>
-                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-                      <path d="M9 11L12 14L22 4M21 12V19C21 19.5304 20.7893 21.0391 20.4142 21.4142C20.0391 21.7893 19.5304 22 19 22H5C4.46957 22 3.96086 21.7893 3.58579 21.4142C3.21071 21.0391 3 20.5304 3 20V19" stroke="#8b5cf6" strokeWidth="2" strokeLinecap="round"/>
-                    </svg>
-                  </div>
-                  <div>
-                    <h4>View Reports</h4>
-                    <p>Check your analytics</p>
-                  </div>
-                </Link>
-              </div>
+          {/* Recent Orders */}
+          <div className="recent-orders-section">
+            <div className="section-header">
+              <h2>Recent Orders</h2>
+              <button className="btn-view-all" onClick={() => navigate('/vendor/orders')}>
+                View All Orders →
+              </button>
             </div>
+
+            {recentOrders.length > 0 ? (
+              <div className="orders-table-wrapper">
+                <table className="orders-table">
+                  <thead>
+                    <tr>
+                      <th>ORDER ID</th>
+                      <th>CUSTOMER</th>
+                      <th>DELIVERY TO</th>
+                      <th>STATUS</th>
+                      <th>AMOUNT</th>
+                      <th>ACTIONS</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {recentOrders.map(order => (
+                      <tr key={order.id}>
+                        <td className="order-id">{order.id}</td>
+                        <td>{order.customerName}</td>
+                        <td>{order.delivery}</td>
+                        <td>
+                          <span className={`status-badge status-${order.status}`}>
+                            {order.status === 'in-transit' ? 'In Transit' : 
+                             order.status === 'delivered' ? 'Delivered' :
+                             order.status.charAt(0).toUpperCase() + order.status.slice(1)}
+                          </span>
+                        </td>
+                        <td className="amount">${order.total}</td>
+                        <td>
+                          <button className="btn-action" onClick={() => handleViewOrder(order.id)}>
+                            View
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            ) : (
+              <div className="no-orders-state">
+                <span className="no-orders-icon">📦</span>
+                <h3>No orders yet</h3>
+                <p>Create your first order to get started</p>
+                <button className="btn-create" onClick={() => navigate('/vendor/create-order')}>
+                  Create Order
+                </button>
+              </div>
+            )}
           </div>
+
+        
         </div>
       </div>
     </div>

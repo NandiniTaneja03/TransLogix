@@ -20,23 +20,28 @@ const MyOrders = () => {
   const [acceptedOrders, setAcceptedOrders] = useState([]);
   const [completedOrders, setCompletedOrders] = useState([]);
 
- useEffect(() => {
+useEffect(() => {
   const fetchOrders = async () => {
     try {
-      const res = await fetch("http://localhost:3000/api/orders");
+      const token = localStorage.getItem("token");
+
+      const res = await fetch("http://localhost:3000/api/orders", {
+        headers: {
+          Authorization: `Bearer ${token}`, // 🔥 FIX
+        },
+      });
+
       const data = await res.json();
 
       console.log("ORDERS:", data);
 
-const ordersArray = Array.isArray(data) ? data : [];
+      const ordersArray = Array.isArray(data) ? data : [];
 
-const available = ordersArray.filter(o => o.status === "pending");
-const accepted = ordersArray.filter(o =>
-  o.status === "Picked" || o.status === "Reached"
-);
-const completed = ordersArray.filter(o => o.status === "Delivered");
-
-
+      const available = ordersArray.filter(o => o.status === "pending");
+      const accepted = ordersArray.filter(o =>
+        o.status === "Picked" || o.status === "Reached"
+      );
+      const completed = ordersArray.filter(o => o.status === "Delivered");
 
       setAvailableOrders(available);
       setAcceptedOrders(accepted);

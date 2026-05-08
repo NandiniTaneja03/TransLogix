@@ -156,47 +156,45 @@ const handleCreateOrder = async () => {
     console.error(error);
   }
 };
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    
-    const newErrors = validateForm();
-    if (Object.keys(newErrors).length > 0) {
-      setErrors(newErrors);
-      return;
-    }
+const handleSubmit = async (e) => {
+  e.preventDefault();
 
+  const newErrors = validateForm();
+  if (Object.keys(newErrors).length > 0) {
+    setErrors(newErrors);
+    return;
+  }
+
+  try {
     setIsLoading(true);
 
-    // Simulate order creation
-    setTimeout(() => {
-      // Get existing orders
-      const orders = JSON.parse(localStorage.getItem('vendor_orders') || '[]');
-      
-      const newOrder = {
-        id: `#ORD${1000 + orders.length + 1}`,
-        ...formData,
-        vendorId: user.id,
-        vendorName: user.businessName || user.email,
-        pickup: `${formData.pickupAddress}, ${formData.pickupCity}`,
-        delivery: `${formData.deliveryAddress}, ${formData.deliveryCity}`,
-        distance: '5.2 km', // Mock distance
-        deliveryFee: calculateDeliveryFee(),
-        total: (parseFloat(calculateDeliveryFee()) + 50).toFixed(2), // Mock total
-        amount: '50.00', // Mock order amount
-        status: 'pending',
-        driver: 'Not Assigned',
-        createdAt: new Date().toISOString(),
-        estimatedDelivery: formData.deliveryDate
-      };
+    const token = localStorage.getItem("token");
 
-      orders.push(newOrder);
-      localStorage.setItem('vendor_orders', JSON.stringify(orders));
+    const res = await fetch("http://localhost:3000/api/order", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify({
+        address: formData.deliveryAddress
+      }),
+    });
 
-      setIsLoading(false);
-      alert(`✓ Order ${newOrder.id} created successfully!\n\nStatus: Pending\nWaiting for driver assignment...`);
-      navigate('/vendor');
-    }, 1000);
-  };
+    const data = await res.json();
+
+    console.log("ORDER CREATED:", data);
+
+    alert("Order created successfully ✅");
+
+    navigate("/vendor");
+
+  } catch (error) {
+    console.error(error);
+  } finally {
+    setIsLoading(false);
+  }
+};
 
   return (
     <div className="admin-layout">
@@ -206,9 +204,7 @@ const handleCreateOrder = async () => {
         <div className="page-content">
           <div className="page-header">
             <div>
-          <button onClick={handleCreateOrder}>
-  Create New Order
-</button>
+         
               <p className="page-subtitle">Fill in the details to create a delivery order</p>
             </div>
           </div>

@@ -1,18 +1,18 @@
 const express = require("express");
 const router = express.Router();
 
-const { protect } = require("../middleware/authMiddleware"); // 🔥 ADD THIS
-const { updateOrderStatus, createOrder } = require("../controllers/orderController");
+const { createOrder, updateOrderStatus } = require("../controllers/orderController");
+const protect = require("../middleware/authMiddleware");
 const Order = require("../models/Order");
 
 // ✅ CREATE ORDER
 router.post("/order", protect, createOrder);
 
-// ✅ GET ORDERS (city filter)
+// ✅ GET ORDERS
 router.get("/orders", protect, async (req, res) => {
   try {
     const orders = await Order.find({
-      city: req.user.city.toLowerCase()
+      city: { $regex: new RegExp(`^${req.user.city}$`, "i") } // 🔥 CASE INSENSITIVE
     });
 
     res.json(orders);

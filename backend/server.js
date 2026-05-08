@@ -1,14 +1,13 @@
-const cors = require("cors"); // ✅ ADD THIS
 const express = require("express");
+const cors = require("cors");
 const dotenv = require("dotenv");
+const jwt = require("jsonwebtoken");
+
 const connectDB = require("./src/config/db");
 const logger = require("./src/middleware/loggerMiddleware");
 const errorHandler = require("./src/middleware/errorHandler");
-const sendEmail = require("./src/utils/sendEmail");
-const orderRoutes = require("./src/routes/orderRoutes"); // ✅ FIXED
-
-
-const jwt = require("jsonwebtoken");
+const orderRoutes = require("./src/routes/orderRoutes");
+const User = require("./src/models/User");
 
 dotenv.config();
 
@@ -16,53 +15,79 @@ dotenv.config();
 connectDB();
 
 const app = express();
-app.use(cors()); // ✅ ADD THIS
 
-// middleware
+// ✅ MIDDLEWARES
+app.use(cors());
 app.use(express.json());
 app.use(logger);
 
-// test route
+// ✅ TEST ROUTE
 app.get("/", (req, res) => {
   res.send("Server Running 🚀");
 });
 
-// test email
-app.get("/send-email", async (req, res) => {
-  await sendEmail(process.env.EMAIL_USER, {
-    name: "Nandini",
-    orderId: "ORD123",
-    amount: 499,
-  });
 
-  res.send("Email Sent!");
+// ==============================
+// 🔐 LOGIN ROUTE (FINAL FIXED)
+// ==============================
+app.post("/api/login", async (req, res) => {
+  try {
+    const { email, role } = req.body;
+
+    // 🔍 find user in DB
+    let user = await User.findOne({ email });
+
+    // ➕ create if not exists
+    if (!user) {
+      user = await User.create({
+        name: email.split("@")[0], // simple name
+        email,
+        role: role || "vendor",
+        city: "panipat" // 🔥 keep lowercase for matching
+      });
+    }
+
+    // 🎟️ create JWT token
+    const token = jwt.sign(
+      {
+        id: user._id,           // ✅ REAL Mongo ObjectId
+        email: user.email,
+        role: user.role,
+        city: user.city
+      },
+      process.env.JWT_SECRET,
+      { expiresIn: "7d" }      // optional but good
+    );
+
+    res.json({
+      token,
+      user
+    });
+
+  } catch (error) {
+    console.error("LOGIN ERROR:", error);
+    res.status(500).json({ message: error.message });
+  }
 });
 
-// login (for token)
-app.post("/api/login", (req, res) => {
-  const { email, password, role } = req.body;
 
-  const user = {
-    id: "123",
-    name: "Nandini",
-    email,
-    role,
-    city: "Panipat" // 🔥 IMPORTANT for your project
-  };
-
-  const token = jwt.sign(user, process.env.JWT_SECRET);
-
-  res.json({ token, user });
-});
-
-// API routes
+// ==============================
+// 📦 ORDER ROUTES
+// ==============================
 app.use("/api", orderRoutes);
 
-// error handler
+
+// ==============================
+// ❌ ERROR HANDLER
+// ==============================
 app.use(errorHandler);
 
-// start server
+
+// ==============================
+// 🚀 START SERVER
+// ==============================
 const PORT = 3000;
+
 app.listen(PORT, () => {
   console.log(`Server running on http://localhost:${PORT}`);
 });

@@ -2,29 +2,48 @@ const Order = require("../models/Order");
 const User = require("../models/User");
 const sendEmail = require("../utils/sendEmail");
 
-const Order = require("../models/Order");
-
+// ==============================
+// 📦 CREATE ORDER
+// ==============================
 const createOrder = async (req, res) => {
   try {
+    console.log("🔥 BODY:", req.body);
+    console.log("🔥 USER:", req.user);
+
+    // ❌ safety check
+    if (!req.user) {
+      return res.status(401).json({ message: "User not authorized" });
+    }
+
+    if (!req.body.address) {
+      return res.status(400).json({ message: "Address required" });
+    }
+
     const order = new Order({
-      shopkeeperId: req.user.id,
+      shopkeeperId: req.user.id, // ✅ real Mongo ObjectId from token
       address: req.body.address,
-
-      // ✅ FORCE SAME FORMAT
-      city: req.user.city.toLowerCase(),
-
+      city: req.user.city.toLowerCase(), // 🔥 normalize
       status: "pending"
     });
 
     await order.save();
 
-    res.json({ message: "Order created", order });
+    console.log("✅ ORDER SAVED:", order);
+
+    res.status(201).json({
+      message: "Order created successfully",
+      order
+    });
 
   } catch (error) {
+    console.error("❌ ERROR:", error);
     res.status(500).json({ message: error.message });
   }
 };
 
+// ==============================
+// 🚚 UPDATE ORDER STATUS
+// ==============================
 const updateOrderStatus = async (req, res) => {
   try {
     const { status } = req.body;
@@ -38,6 +57,7 @@ const updateOrderStatus = async (req, res) => {
     order.status = status;
     await order.save();
 
+    // 🧠 status message
     let statusMessage = "";
 
     if (status === "Picked") {
@@ -50,12 +70,14 @@ const updateOrderStatus = async (req, res) => {
       statusMessage = status;
     }
 
+    // 👤 find shopkeeper
     const shopkeeper = await User.findById(order.shopkeeperId);
 
     if (!shopkeeper) {
       return res.status(404).json({ message: "User not found" });
     }
 
+    // 📧 send email
     await sendEmail(shopkeeper.email, {
       name: shopkeeper.name,
       orderId: order._id,
@@ -68,8 +90,15 @@ const updateOrderStatus = async (req, res) => {
     res.json({ message: "Status updated & email sent 🚀" });
 
   } catch (error) {
+    console.error("❌ ERROR:", error);
     res.status(500).json({ message: error.message });
   }
 };
 
-module.exports = { updateOrderStatus, createOrder };
+// ==============================
+// EXPORT
+// ==============================
+module.exports = {
+  createOrder,
+  updateOrderStatus
+};
